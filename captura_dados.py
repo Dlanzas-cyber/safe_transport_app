@@ -52,7 +52,6 @@ with abas[0]:
         st.write(f"**Data do Transporte:** {data_transporte.strftime('%d/%m/%Y')}")
         st.write(f"**Hora do Transporte:** {hora_transporte.strftime('%H:%M')}")
 
-
 #####################################
 # PASSO 2 – Avaliação do risco de transporte
 #####################################
@@ -89,7 +88,7 @@ with abas[1]:
     elif modalidade == "Oxigênio Suplementar":
         tipo_mascara = st.selectbox("Tipo de máscara", options=["Máscara de alto débito", "Máscara de Venturi", "Máscara simples", "O2 por óculos nasais"])
         resp_dif_sup = st.radio("Sinais de dificuldade respiratória", options=["Sim", "Não"])
-    # "Ar ambiente": não tem perguntas adicionais.
+    # "Ar ambiente" não tem questões adicionais.
     fio2 = st.number_input("FiO₂ média das últimas 3 h (%)", min_value=21, max_value=100, value=21)
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -139,15 +138,19 @@ with abas[1]:
     st.subheader("5. Avaliação de Sedação e Analgesia em Perfusão")
     if 'sedacao' not in st.session_state:
         st.session_state.sedacao = []
-    droga_sed = st.text_input("Droga (ex.: morfina, fentanil, midazolam, cetamina, propofol, dexmedetomidina, rocurônio)", key="droga_sed")
-    dose_sed = st.number_input("Dose (mg/kg/h ou mcg/kg/h)", min_value=0.0, step=0.1, key="dose_sed")
+    droga_sed = st.text_input(
+        "Droga (ex.: morfina, fentanil, midazolam, cetamina, propofol, dexmedetomidina, rocurônio)",
+        key="droga_sed"
+    )
+    dose_sed = st.number_input("Dose", min_value=0.0, step=0.1, key="dose_sed")
+    unidade_sed = st.selectbox("Unidade", options=["mg/kg/h", "mcg/kg/h"], key="unidade_sed")
     if st.button("Adicionar Droga Sedação", key="add_sed"):
         if droga_sed:
-            st.session_state.sedacao.append((droga_sed, dose_sed))
+            st.session_state.sedacao.append((droga_sed, dose_sed, unidade_sed))
     if st.session_state.sedacao:
         st.markdown("**Drogas de sedação adicionadas:**")
         for droga in st.session_state.sedacao:
-            st.write(f"{droga[0]}: {droga[1]}")
+            st.write(f"{droga[0]}: {droga[1]} {droga[2]}")
     st.markdown("</div>", unsafe_allow_html=True)
     
     ##############################
@@ -170,7 +173,7 @@ with abas[1]:
     st.markdown("</div>", unsafe_allow_html=True)
     
     ##############################
-    # Botão final – Calcular risco de transporte e mostrar modal
+    # Botão final – Calcular risco de transporte e mostrar modal simulado
     ##############################
     if st.button("Calcular risco de transporte", key="calc_risco"):
         def calcular_risco():
@@ -277,7 +280,6 @@ with abas[1]:
         else:
             risco_final = 1
 
-        # Definir a explicação do risco
         if risco_final == 1:
             explicacao = "Transporte seguro."
         elif risco_final == 2:
@@ -289,15 +291,20 @@ with abas[1]:
         elif risco_final == 5:
             explicacao = "Transporte contraindicado – reavaliar o estado clínico."
 
-        # Apresentar modal (pop-up centralizado com dimensões reduzidas)
-        with st.modal("Resultado da Avaliação do Risco de Transporte", key="modal_risco"):
-            st.markdown(f"<h2>Risco de Transporte: {risco_final}</h2>", unsafe_allow_html=True)
+        # Modal simulado com container e CSS inline
+        modal_placeholder = st.empty()
+        with modal_placeholder.container():
+            st.markdown(
+                "<div style='position: fixed; top: 20%; left: 30%; width: 40%; padding: 20px; border: 3px solid #000; background-color: #fff; z-index: 9999;'>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(f"<h2 style='text-align: center;'>Risco de Transporte: {risco_final}</h2>", unsafe_allow_html=True)
             st.write(explicacao)
             col_mod1, col_mod2 = st.columns(2)
             if col_mod1.button("Rever itens da Avaliação do risco de transporte"):
+                modal_placeholder.empty()
                 st.experimental_rerun()
             if col_mod2.button("Finalizar avaliação risco de transporte"):
-                # Gerar relatório PDF
                 pdf = FPDF()
                 pdf.add_page()
                 pdf.set_font("Arial", size=12)
@@ -307,7 +314,8 @@ with abas[1]:
                 st.download_button("Descarregar Relatório em PDF", data=pdf_output,
                                    file_name="relatorio_transporte.pdf",
                                    mime="application/pdf")
-                # Reset dos dados para novo doente
                 for key in list(st.session_state.keys()):
                     del st.session_state[key]
+                modal_placeholder.empty()
                 st.experimental_rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
