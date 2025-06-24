@@ -1,13 +1,17 @@
 import streamlit as st
 from datetime import datetime
 
-# Configuração da página
+#####################
+# CONFIGURAÇÃO DA PÁGINA
+#####################
 st.set_page_config(page_title="Avaliação Transporte Pediátrico", layout="wide")
 
 # Criação das abas
-abas = st.tabs(["Dados do doente", "Árvore de Decisão"])
+abas = st.tabs(["Dados do doente", "Árvore de Decisão – Risco de Transporte"])
 
-# --------------------- Aba 1: Dados do doente ---------------------
+####################################
+# ABA 1: Dados do doente
+####################################
 with abas[0]:
     st.title("Módulo 1: Dados do doente")
     st.markdown("Insira os dados básicos do doente e do transporte.")
@@ -16,9 +20,9 @@ with abas[0]:
         col1, col2 = st.columns(2)
         with col1:
             nome_utente = st.text_input("Nome do utente *")
-            # Idade como número inteiro (sem decimais)
+            # Idade: número inteiro sem decimais.
             idade = st.number_input("Idade", min_value=0, step=1)
-            # Unidade de idade (após a idade)
+            # A unidade de idade vem depois da idade.
             unidade_idade = st.selectbox("Unidade de idade", options=["Dias", "Meses", "Anos"], index=2)
             peso = st.number_input("Peso (kg) *", min_value=0.0, step=0.1, format="%.1f")
         with col2:
@@ -33,13 +37,13 @@ with abas[0]:
                 diagnostico_final = st.text_input("Introduza o diagnóstico manualmente")
             else:
                 diagnostico_final = diagnostico_selecionado
-
+                
             data_transporte = st.date_input("Data do transporte *", value=datetime.now().date())
             hora_transporte = st.time_input("Hora do transporte *", value=datetime.now().time())
     
     if st.button("Submeter Dados do Doente"):
         st.success("Dados do doente submetidos com sucesso!")
-        st.markdown("### Resumo dos Dados:")
+        st.markdown("### Resumo:")
         st.write(f"**Nome:** {nome_utente}")
         st.write(f"**Idade:** {idade} {unidade_idade}")
         st.write(f"**Peso:** {peso} kg")
@@ -47,93 +51,227 @@ with abas[0]:
         st.write(f"**Data do Transporte:** {data_transporte.strftime('%d/%m/%Y')}")
         st.write(f"**Hora do Transporte:** {hora_transporte.strftime('%H:%M')}")
 
-# --------------------- Aba 2: Árvore de Decisão ---------------------
+####################################
+# ABA 2: Árvore de Decisão – Risco de Transporte
+####################################
 with abas[1]:
-    st.title("Módulo 2: Árvore de Decisão - Risco de Transporte")
+    st.title("Módulo 2: Árvore de Decisão – Risco de Transporte")
     st.markdown("Preencha os parâmetros (médias das últimas 3 horas) para avaliar o risco do transporte:")
 
-    # 1. Avaliação Respiratória
+    #####################
+    # Seção 1: Avaliação Respiratória (com árvore de decisão)
+    #####################
+    st.markdown("<div style='border:2px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
     st.subheader("1. Avaliação Respiratória")
-    col_resp1, col_resp2, col_resp3 = st.columns(3)
-    fio2 = col_resp1.slider("FiO₂ média (%)", min_value=21, max_value=100, value=21)
-    peep = col_resp2.number_input("PEEP média (cmH₂O)", min_value=0.0, step=0.5)
-    spo2 = col_resp3.number_input("SpO₂ média (%)", min_value=50, max_value=100, step=1)
-    modo_vent = st.radio("Modalidade ventilatória", options=[
-        "Ventilação mecânica invasiva", "CPAP/NIV", "Oxigenoterapia de alto fluxo", "Espontâneo com cânula"
-    ])
-
-    # 2. Avaliação Hemodinâmica
-    st.subheader("2. Avaliação Hemodinâmica")
-    col_hemo1, col_hemo2, col_hemo3 = st.columns(3)
-    fc = col_hemo1.number_input("Frequência cardíaca média (lpm)", min_value=0, step=1)
-    pas = col_hemo2.number_input("Pressão arterial sistólica (mmHg)", min_value=0, step=1)
-    # Usaremos somente a pressão sistólica para simplificar.
     
-    st.markdown("**Infusões vasoativas (mcg/kg/min):**")
-    col_vaso1, col_vaso2, col_vaso3 = st.columns(3)
-    dopamina = col_vaso1.number_input("Dopamina", min_value=0.0, step=0.1)
-    dobutamina = col_vaso1.number_input("Dobutamina", min_value=0.0, step=0.1)
-    norad = col_vaso2.number_input("Noradrenalina", min_value=0.0, step=0.01)
-    adren = col_vaso2.number_input("Adrenalina", min_value=0.0, step=0.01)
-    milrinona = col_vaso3.number_input("Milrinona", min_value=0.0, step=0.01)
-    outras = col_vaso3.text_input("Outras (mcg/kg/min, se houver)", value="0")
-    try:
-        outras_val = float(outras)
-    except:
-        outras_val = 0.0
+    # Perguntar a modalidade ventilatória com árvore de decisão:
+    modalidade = st.selectbox("Modalidade ventilatória", 
+              options=[
+                  "Ventilação Mecânica Invasiva (VMI)", 
+                  "Ventilação Não Invasiva (VNI)", 
+                  "Oxigenoterapia de Alto Fluxo (OAF)", 
+                  "Oxigênio Suplementar", 
+                  "Ar ambiente"
+              ])
+    
+    # Condicionais conforme a opção:
+    if modalidade == "Ventilação Mecânica Invasiva (VMI)":
+        tube_level = st.selectbox("Nível do tubo Oro-traqueal", options=["Baixo", "Médio", "Alto"])
+        fixacao = st.radio("Fixação do tubo adequada", options=["Sim", "Não"])
+        ausc = st.radio("Auscultação simétrica", options=["Sim", "Não"])
+    elif modalidade == "Ventilação Não Invasiva (VNI)":
+        vni_mod = st.selectbox("Modalidade", options=["CPAP", "BIPAP"])
+        facial = st.radio("Placas de proteção facial", options=["Sim", "Não"])
+        resp_dif_vni = st.radio("Sinais de dificuldade respiratória", options=["Sim", "Não"])
+    elif modalidade == "Oxigenoterapia de Alto Fluxo (OAF)":
+        fluxos = st.radio("Fluxos estão adequados", options=["Sim", "Não"])
+        resp_dif_oaf = st.radio("Sinais de dificuldade respiratória", options=["Sim", "Não"])
+    elif modalidade == "Oxigênio Suplementar":
+        mascara = st.selectbox("Tipo de máscara", options=["Máscara de alto débito", "Máscara de Venturi", "Máscara simples", "O2 por óculos nasais"])
+        resp_dif_sup = st.radio("Sinais de dificuldade respiratória", options=["Sim", "Não"])
+    # "Ar ambiente": nenhuma pergunta adicional.
+    fiO2 = st.number_input("FiO₂ média das últimas 3h (%)", min_value=21, max_value=100, value=21)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    # 3. Avaliação Neurológica
-    st.subheader("3. Avaliação Neurológica")
-    gcs = st.slider("Glasgow Coma Scale (3-15)", min_value=3, max_value=15, value=15)
+    #####################
+    # Seção 2: Avaliação Hemodinâmica
+    #####################
+    st.markdown("<div style='border:2px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
+    st.subheader("2. Avaliação Hemodinâmica")
+    fc = st.number_input("Frequência cardíaca média (lpm)", min_value=0, step=1)
+    pas = st.number_input("Pressão arterial sistólica (mmHg)", min_value=0, step=1)
+    pad = st.number_input("Pressão arterial diastólica (mmHg)", min_value=0, step=1)
+    pam = st.number_input("Pressão arterial média (mmHg)", min_value=0, step=1)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    #####################
+    # Seção 3: Infusões Vasoativas (com autocomplete)
+    #####################
+    st.markdown("<div style='border:2px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
+    st.subheader("3. Infusões Vasoativas (mcg/kg/min)")
+    # Aumentar o tamanho das letras nas labels usando HTML inline:
+    st.markdown("<p style='font-size:18px;'><b>Infusões:</b></p>", unsafe_allow_html=True)
+    if 'vasoativos' not in st.session_state:
+        st.session_state.vasoativos = []
+    vasoativo_droga = st.text_input("Droga", key="droga_vasoativo")
+    vasoativo_dose = st.number_input("Dose (mcg/kg/min)", min_value=0.0, step=0.1, key="dose_vasoativo")
+    if st.button("Adicionar Vasoativo", key="add_vasoativo"):
+        if vasoativo_droga and vasoativo_dose is not None:
+            st.session_state.vasoativos.append((vasoativo_droga, vasoativo_dose))
+    if st.session_state.vasoativos:
+        st.markdown("**Vasoativos adicionados:**")
+        for item in st.session_state.vasoativos:
+            st.write(f"{item[0]}: {item[1]} mcg/kg/min")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    #####################
+    # Seção 4: Avaliação Neurológica
+    #####################
+    st.markdown("<div style='border:2px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
+    st.markdown("<span style='font-size:20px; font-weight:bold;'>4. Avaliação Neurológica - Glasgow Coma Scale (3-15)</span>", unsafe_allow_html=True)
+    gcs = st.slider("GCS", min_value=3, max_value=15, value=15)
     avpu = st.radio("Nível AVPU", options=["Alert", "Verbal", "Pain", "Unresponsive"])
-
-    # 4. Avaliação de Sedação e Analgesia
-    st.subheader("4. Avaliação de Sedação e Analgesia")
-    intubacao = st.radio("Entubação Oro-traqueal", options=["Sim", "Não"])
-    fixacao = st.radio("Fixação do tubo adequada", options=["Sim", "Não"])
-    comfort = st.number_input("COMFORT–B (6-30)", min_value=6, max_value=30, step=1)
-
-    # 5. Suporte Avançado e Complicações
-    st.subheader("5. Suporte Avançado e Complicações")
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    #####################
+    # Seção 5: Avaliação de Sedação e Analgesia em Perfusão (com autocomplete)
+    #####################
+    st.markdown("<div style='border:2px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
+    st.subheader("5. Avaliação de Sedação e Analgesia em Perfusão")
+    if 'sedacao' not in st.session_state:
+        st.session_state.sedacao = []
+    sedacao_droga = st.text_input("Droga", key="droga_sedacao")
+    if st.button("Adicionar Droga", key="add_sedacao"):
+        if sedacao_droga:
+            st.session_state.sedacao.append(sedacao_droga)
+    if st.session_state.sedacao:
+        st.markdown("**Drogas adicionadas:**")
+        for droga in st.session_state.sedacao:
+            st.write(droga)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    #####################
+    # Seção 6: Suporte Avançado e Complicações + Características do trajeto
+    #####################
+    st.markdown("<div style='border:2px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
+    st.subheader("6. Suporte Avançado e Complicações")
     drenagem_toracica = st.radio("Drenagem torácica", options=["Sim", "Não"])
     drenagem_vesical = st.radio("Drenagem vesical", options=["Sim", "Não"])
     crrt = st.radio("Terapia renal contínua (CRRT)", options=["Sim", "Não"])
     arritmias = st.radio("Arritmias inestáveis nas últimas 3h", options=["Sim", "Não"])
-    hipertensao_intracranica = st.radio("Sospeita de hipertensão intracraniana aguda", options=["Sim", "Não"])
-
-    # Função para calcular o Vasoactive-Inotropic Score (VIS)
-    def calcular_vis(dopamina, dobutamina, norad, adren, milrinona, outras):
-        return dopamina + dobutamina + 100 * (norad + adren) + 10 * (milrinona + outras)
-
-    # Função de decisão: árvore de decisão para o risco de transporte
-    def calcular_risco(fio2, peep, spo2, gcs, avpu, vis, arritmias, hipertensao):
-        # Risco 5: Crítico/contraindicado
-        if (fio2 > 80 or peep > 10 or spo2 < 85 or vis > 20 or gcs < 8 or avpu == "Unresponsive"
-            or arritmias == "Sim" or hipertensao == "Sim"):
-            return 5
-        # Risco 4: Elevado
-        elif (fio2 > 60 or peep > 8 or spo2 < 90 or vis > 10 or gcs < 10):
-            return 4
-        # Risco 3: Moderado
-        elif (fio2 > 50 or peep > 5 or spo2 < 92 or vis > 5 or gcs < 13):
-            return 3
-        # Risco 2: Leve
-        elif (fio2 > 40):
-            return 2
+    hipertensao = st.radio("Sospeita de hipertensão intracraniana aguda", options=["Sim", "Não"])
+    st.markdown("**Características do trajeto:**")
+    trajeto_andar = st.radio("O transporte é no mesmo andar?", options=["Sim", "Não"])
+    elevador = st.radio("Necessita utilizar elevador?", options=["Sim", "Não"])
+    space_elevador = "Não Aplicável"
+    if elevador == "Sim":
+        space_elevador = st.radio("O elevador tem espaço suficiente para cama e ventilador?", options=["Sim", "Não"])
+    tempo_transporte = st.number_input("Tempo de transporte (minutos)", min_value=0, step=1)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    #####################
+    # Botão final – Submeter Avaliação e exibir pop-up com o risco
+    #####################
+    if st.button("Submeter Avaliação"):
+        # Função dummy para cálculo de risco
+        def calcular_risco():
+            score = 0
+            # Avaliação Respiratória
+            if fiO2 > 80:
+                score += 5
+            elif fiO2 > 60:
+                score += 3
+            elif fiO2 > 50:
+                score += 2
+            elif fiO2 > 40:
+                score += 1
+            # Sinais de dificuldade respiratória (baseado na modalidade)
+            if modalidade == "Ventilação Mecânica Invasiva (VMI)":
+                if tube_level == "Alto":
+                    score += 2
+                if fixacao == "Não":
+                    score += 2
+                if ausc == "Não":
+                    score += 2
+            elif modalidade == "Ventilação Não Invasiva (VNI)":
+                if facial == "Não":
+                    score += 1
+                if resp_dif_vni == "Sim":
+                    score += 2
+            elif modalidade == "Oxigenoterapia de Alto Fluxo (OAF)":
+                if fluxos == "Não":
+                    score += 2
+                if resp_dif_oaf == "Sim":
+                    score += 2
+            elif modalidade == "Oxigênio Suplementar":
+                if mascara == "Máscara de Venturi":
+                    score += 2
+                else:
+                    score += 1
+                if resp_dif_sup == "Sim":
+                    score += 2
+            
+            # Avaliação Hemodinâmica:
+            if pas < 60:
+                score += 2
+            if pad < 40:
+                score += 1
+            if pam < 50:
+                score += 2
+            
+            # Infusões vasoativas:
+            total_vaso = sum([dose for _, dose in st.session_state.vasoativos])
+            if total_vaso > 20:
+                score += 5
+            elif total_vaso > 10:
+                score += 3
+            elif total_vaso > 0:
+                score += 1
+            
+            # Avaliação Neurológica:
+            if gcs < 8:
+                score += 5
+            elif gcs < 10:
+                score += 3
+            elif gcs < 13:
+                score += 2
+            
+            # Sedação/Analgesia:
+            if st.session_state.sedacao:
+                score += len(st.session_state.sedacao)
+            
+            # Suporte Avançado e Complicações:
+            if drenagem_toracica == "Sim":
+                score += 2
+            if drenagem_vesical == "Sim":
+                score += 1
+            if crrt == "Sim":
+                score += 2
+            if arritmias == "Sim":
+                score += 2
+            if hipertensao == "Sim":
+                score += 2
+            if elevador == "Sim" and space_elevador == "Não":
+                score += 2
+            if tempo_transporte > 20:
+                score += 2
+            
+            return score
+        
+        risk_score = calcular_risco()
+        # Mapeamento do score para nível de risco:
+        if risk_score >= 20:
+            risco_final = 5
+        elif risk_score >= 16:
+            risco_final = 4
+        elif risk_score >= 12:
+            risco_final = 3
+        elif risk_score >= 8:
+            risco_final = 2
         else:
-            return 1
-
-    if st.button("📊 Calcular Risco de Transporte"):
-        vis = calcular_vis(dopamina, dobutamina, norad, adren, milrinona, outras_val)
-        risco = calcular_risco(fio2, peep, spo2, gcs, avpu, vis, arritmias, hipertensao_intracranica)
-        st.subheader("Resultado da Avaliação:")
-        if risco == 1:
-            st.success("Risco 1: Transporte seguro.")
-        elif risco == 2:
-            st.info("Risco 2: Transporte viável com monitorização reforçada.")
-        elif risco == 3:
-            st.warning("Risco 3: Transporte com precauções avançadas.")
-        elif risco == 4:
-            st.error("Risco 4: Transporte de alto risco – requer equipa especializada.")
-        elif risco == 5:
-            st.error("Risco 5: Transporte contraindicado – reavaliar o estado clínico.")
+            risco_final = 1
+        
+        # Pop-up simulado com um retângulo:
+        st.markdown("<div style='border:3px solid #000; padding:15px; margin-top:20px;'>", unsafe_allow_html=True)
+        st.markdown(f"<h2>Risco de Transporte: {risco_final}</h2>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
