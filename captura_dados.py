@@ -3,37 +3,50 @@ from datetime import datetime
 
 # Configuração da página
 st.set_page_config(page_title="Captura de Dados - Módulo 1", layout="wide")
-st.title("Captura de Dados - Módulo 1")
-st.markdown("**Insira os dados básicos do utente e do transporte.**")
 
-# Módulo de Identificação do Utente
-with st.expander("1. Identificação do Utente", expanded=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        nome_utente = st.text_input("Nome do Utente *")
-        idade = st.number_input("Idade (anos) *", min_value=0.0, format="%.1f")
-        peso = st.number_input("Peso (kg) *", min_value=0.0, format="%.1f")
-    with col2:
-        # Diagnóstico principal com autocomplete
-        diagnosticos = [
-            "Pneumonia", "Choque séptico", "Insuficiência respiratória aguda",
-            "Estado convulsivo", "Cardiopatia congénita", "Traumatismo craniano",
-            "Bronquiolite", "Asma", "Sepse neonatal", "Outro"
-        ]
-        diagnostico_principal = st.selectbox("Diagnóstico Principal *", options=diagnosticos)
-        if diagnostico_principal == "Outro":
-            diagnostico_principal = st.text_input("Por favor, especifique o diagnóstico")
-        # Data e Hora do Transporte
-        data_transporte = st.date_input("Data do Transporte *", value=datetime.now().date())
-        hora_transporte = st.time_input("Hora do Transporte *", value=datetime.now().time())
+# Cria uma pestana chamada "Dados do doente"
+abas = st.tabs(["Dados do doente"])
 
-# Botão para submeter os dados
-if st.button("Submeter Dados"):
-    st.success("Dados submetidos com sucesso!")
-    st.markdown("### Resumo da Captura de Dados:")
-    st.write(f"**Nome:** {nome_utente}")
-    st.write(f"**Idade:** {idade} anos")
-    st.write(f"**Peso:** {peso} kg")
-    st.write(f"**Diagnóstico Principal:** {diagnostico_principal}")
-    st.write(f"**Data do Transporte:** {data_transporte.strftime('%d/%m/%Y')}")
-    st.write(f"**Hora do Transporte:** {hora_transporte.strftime('%H:%M')}")
+with abas[0]:
+    st.title("Captura de Dados - Módulo 1: Dados do doente")
+    st.markdown("**Insira os dados básicos do doente e do transporte.**")
+    
+    with st.expander("Dados do doente", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Nome, idade (com unidade) e peso do utente
+            nome_utente = st.text_input("Nome do utente *")
+            # Seleção da unidade para a idade: Dias, Meses ou Anos
+            unidade_idade = st.selectbox("Unidade de idade", options=["Dias", "Meses", "Anos"], index=2)
+            idade = st.number_input("Idade", min_value=0.0, step=0.1, format="%.1f")
+            peso = st.number_input("Peso (kg) *", min_value=0.0, format="%.1f")
+        
+        with col2:
+            # Diagnóstico com autocompletar: se não estiver na lista, permite inserção manual
+            diagnosticos = [
+                "Pneumonia", "Choque séptico", "Insuficiência respiratória aguda",
+                "Estado convulsivo", "Cardiopatia congénita",
+                "Traumatismo craniano", "Bronquiolite", "Asma", "Sepse neonatal"
+            ]
+            opcoes_diagnostico = diagnosticos + ["Outro (escrever)"]
+            diagnostico_selecionado = st.selectbox("Diagnóstico principal (autocompletar)", options=opcoes_diagnostico)
+            if diagnostico_selecionado == "Outro (escrever)":
+                diagnostico_final = st.text_input("Introduza o diagnóstico manualmente")
+            else:
+                diagnostico_final = diagnostico_selecionado
+                
+            # Data e hora do transporte
+            data_transporte = st.date_input("Data do transporte *", value=datetime.now().date())
+            hora_transporte = st.time_input("Hora do transporte *", value=datetime.now().time())
+    
+    # Botão que submete os dados e exibe um resumo
+    if st.button("Submeter Dados"):
+        st.success("Dados submetidos com sucesso!")
+        st.markdown("### Resumo dos Dados:")
+        st.write(f"**Nome:** {nome_utente}")
+        st.write(f"**Idade:** {idade} {unidade_idade}")
+        st.write(f"**Peso:** {peso} kg")
+        st.write(f"**Diagnóstico:** {diagnostico_final}")
+        st.write(f"**Data do Transporte:** {data_transporte.strftime('%d/%m/%Y')}")
+        st.write(f"**Hora do Transporte:** {hora_transporte.strftime('%H:%M')}")
