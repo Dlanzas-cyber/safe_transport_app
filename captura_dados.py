@@ -23,6 +23,7 @@ with abas[0]:
         with col1:
             nome_utente = st.text_input("Nome do utente *")
             idade = st.number_input("Idade", min_value=0, step=1)  # número inteiro
+            # A unidade de idade aparece depois da idade
             unidade_idade = st.selectbox("Unidade de idade", options=["Dias", "Meses", "Anos"], index=2)
             peso = st.number_input("Peso (kg) *", min_value=0.0, step=0.1, format="%.1f")
         with col2:
@@ -64,14 +65,16 @@ with abas[1]:
     ##############################
     st.markdown("<div style='border:3px solid #000; padding:10px; margin-bottom:10px;'>", unsafe_allow_html=True)
     st.subheader("1. Avaliação Respiratória")
-    modalidade = st.selectbox("Modalidade ventilatória", 
-              options=[
-                  "Ventilação Mecânica Invasiva (VMI)", 
-                  "Ventilação Não Invasiva (VNI)", 
-                  "Oxigenoterapia de Alto Fluxo (OAF)", 
-                  "Oxigênio Suplementar", 
-                  "Ar ambiente"
-              ])
+    modalidade = st.selectbox(
+        "Modalidade ventilatória",
+        options=[
+            "Ventilação Mecânica Invasiva (VMI)",
+            "Ventilação Não Invasiva (VNI)",
+            "Oxigenoterapia de Alto Fluxo (OAF)",
+            "Oxigênio Suplementar",
+            "Ar ambiente"
+        ]
+    )
     if modalidade == "Ventilação Mecânica Invasiva (VMI)":
         nivel_tubo = st.text_input("Nível do tubo Oro-traqueal")
         fixacao = st.radio("Fixação do tubo adequada", options=["Sim", "Não"])
@@ -86,7 +89,7 @@ with abas[1]:
     elif modalidade == "Oxigênio Suplementar":
         tipo_mascara = st.selectbox("Tipo de máscara", options=["Máscara de alto débito", "Máscara de Venturi", "Máscara simples", "O2 por óculos nasais"])
         resp_dif_sup = st.radio("Sinais de dificuldade respiratória", options=["Sim", "Não"])
-    # "Ar ambiente": sem perguntas adicionais.
+    # "Ar ambiente": não tem perguntas adicionais.
     fio2 = st.number_input("FiO₂ média das últimas 3 h (%)", min_value=21, max_value=100, value=21)
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -109,7 +112,6 @@ with abas[1]:
     st.markdown("<p style='font-size:18px; font-weight:bold;'>3. Infusões Vasoativas (mcg/kg/min)</p>", unsafe_allow_html=True)
     if 'vasoativos' not in st.session_state:
         st.session_state.vasoativos = []
-    # Espaço com autocomplete (o utilizador pode escrever a droga)
     droga_vaso = st.text_input("Droga (ex.: adrenalina, noradrenalina, dopamina, dobutamina, milrinona, aminofilina)", key="droga_vaso")
     dose_vaso = st.number_input("Dose (mcg/kg/min)", min_value=0.0, step=0.1, key="dose_vaso")
     if st.button("Adicionar Vasoativo", key="add_vaso"):
@@ -287,33 +289,25 @@ with abas[1]:
         elif risco_final == 5:
             explicacao = "Transporte contraindicado – reavaliar o estado clínico."
 
-        # Apresentar modal (janela pop-up centralizada com dimensões reduzidas)
+        # Apresentar modal (pop-up centralizado com dimensões reduzidas)
         with st.modal("Resultado da Avaliação do Risco de Transporte", key="modal_risco"):
             st.markdown(f"<h2>Risco de Transporte: {risco_final}</h2>", unsafe_allow_html=True)
             st.write(explicacao)
             col_mod1, col_mod2 = st.columns(2)
             if col_mod1.button("Rever itens da Avaliação do risco de transporte"):
-                # Para rever os itens, o modal fecha e retorna à aba atual
                 st.experimental_rerun()
             if col_mod2.button("Finalizar avaliação risco de transporte"):
-        # --- Geração do PDF ---
-        pdf = PDF()
-        pdf.add_title("Relatório de Avaliação do Transporte Pediátrico")
-        pdf.add_line("Nome", nome)
-        pdf.add_line("Idade", f"{idade} {unidade_idade}")
-        pdf.add_line("Peso", f"{peso} kg")
-        pdf.add_line("Diagnóstico", diagnostico)
-        pdf.add_line("Data", data_transporte.strftime('%d/%m/%Y'))
-        pdf.add_line("Hora", hora_transporte.strftime('%H:%M'))
-        pdf.ln(5)
-        pdf.add_line("FiO₂", f"{fio2}%")
-        pdf.add_line("PAS", f"{pas} mmHg")
-        pdf.add_line("PAM", f"{pam} mmHg")
-        pdf.add_line("SatO₂", f"{satO2}%")
-        pdf.add_line("GCS", str(gcs))
-        pdf.add_line("Tempo transporte", f"{tempo_transporte} min")
-        pdf.ln(5)
-        pdf.add_line("Risco final", f"{nivel} – {explicacao}")
-
-        st.download_button("📄 Descarregar PDF", pdf.output(dest="S").encode("utf-8"),
-                           file_name="relatorio_transporte.pdf", mime="application/pdf")
+                # Gerar relatório PDF
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                pdf.cell(200, 10, txt="Relatório de Avaliação do Risco de Transporte", ln=True, align='C')
+                pdf.cell(200, 10, txt=f"Risco: {risco_final} - {explicacao}", ln=True, align='L')
+                pdf_output = pdf.output(dest='S').encode('latin-1')
+                st.download_button("Descarregar Relatório em PDF", data=pdf_output,
+                                   file_name="relatorio_transporte.pdf",
+                                   mime="application/pdf")
+                # Reset dos dados para novo doente
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                st.experimental_rerun()
